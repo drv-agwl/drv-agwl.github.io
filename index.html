@@ -91,6 +91,21 @@ In general, my interests lie in the realms of computer vision, machine learning,
             </td>
           </tr>
           </table>
+
+        <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
+          <tr>
+            <td style="padding:20px;width:75%;vertical-align:middle">
+            <papertitle>Prosody Corrector</papertitle>
+            [<a href="https://github.com/rephraseai/prosody_correction">Code (private)</a>]
+            <p>
+              Project goal: Develop a deep learning model to match prosody of single word to prosody of sentence using two audio samples - target word spoken by respeecher (or any other TTS) and an entire sentence spoken by speaker. 
+            </p>
+            <p>
+              The model consists of two stages: first, a CNN network processes the audio's mel spectrogram, correcting the word's prosody while preserving its content. Then, a W-GAN pipeline uses this intermediate mel spectrogram to generate a corrected mel spectrogram. When this corrected spectrogram is decoded, it produces a seamless audio with the desired prosody corrections.
+            </p>              
+            </td>
+          </tr>
+        </table>
         
         <table style="width:100%;border:0px;border-spacing:0px;border-collapse:separate;margin-right:auto;margin-left:auto;"><tbody>
         <tr onmouseout="airavat_stop()" onmouseover="airavat_start()">
