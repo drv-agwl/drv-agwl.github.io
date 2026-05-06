@@ -64,14 +64,23 @@
 }
 
 a {
-  color: #1772d0;
+  color: #1568c4;
   text-decoration: none;
+  text-underline-offset: 2px;
 }
 
 a:focus,
 a:hover {
-  color: #f09228;
-  text-decoration: none;
+  color: #d9770a;
+  text-decoration: underline;
+}
+
+body {
+  color: #222;
+  background-color: #fff;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body,
@@ -81,28 +90,49 @@ tr,
 p,
 a {
   font-family: 'Lato', Verdana, Helvetica, sans-serif;
-  font-size: 14px
+  font-size: 15px;
 }
 
 strong {
   font-family: 'Lato', Verdana, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
 }
 
 heading {
   font-family: 'Lato', Verdana, Helvetica, sans-serif;
   font-size: 22px;
+  display: block;
+  margin-top: 0.35em;
+  margin-bottom: 0.5em;
+  color: #111;
+  letter-spacing: -0.02em;
 }
 
 papertitle {
   font-family: 'Lato', Verdana, Helvetica, sans-serif;
   font-size: 15px;
-  font-weight: 700
+  font-weight: 700;
+  color: #111;
 }
 
 name {
   font-family: 'Lato', Verdana, Helvetica, sans-serif;
   font-size: 32px;
+  display: block;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.02em;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+/* Outer content column: Jon Barron–style layout, slightly wider for comfort */
+table.page-wrap {
+  max-width: 860px;
 }
 
 .one {
@@ -128,4 +158,10 @@ name {
 
 span.highlight {
   background-color: #ffffd0;
+}
+
+/* Venue / proceedings line (replaces inline color on research entries) */
+em.venue {
+  font-style: italic;
+  color: #8b4510;
 }
