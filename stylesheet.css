@@ -166,6 +166,14 @@ em.venue {
   color: #8b4510;
 }
 
+.venue-logo {
+  width: 16px;
+  height: 16px;
+  vertical-align: -3px;
+  margin-right: 5px;
+  display: inline-block;
+}
+
 /* Featured Projects: composed teaser card + title link styling */
 .featured-card {
   width: 100%;
