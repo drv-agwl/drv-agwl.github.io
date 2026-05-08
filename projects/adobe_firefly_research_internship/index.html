@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Structure-Match Conditioning for Adobe Firefly Video: edge and depth structural conditioning for controllable text-to-video generation." />
+  <meta name="author" content="Dhruv Agarwal" />
+  <title>Structure-Match Conditioning for Adobe Firefly Video</title>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #ffffff;
+      --panel-2: #f7f7f7;
+      --text: #111111;
+      --muted: #4f4f4f;
+      --muted-2: #777777;
+      --border: #e5e5e5;
+      --accent: #e34850;
+      --accent-soft: rgba(227, 72, 80, 0.08);
+      --max-width: 1160px;
+      --radius: 18px;
+      --font: Inter, "Adobe Clean", "Helvetica Neue", Arial, sans-serif;
+      --mono: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img,
+    video {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      background: #f2f2f2;
+    }
+
+    .container {
+      width: min(var(--max-width), calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      line-height: 1.25;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: auto;
+      flex: 0 0 34px;
+      display: block;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand strong {
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+    }
+
+    .brand .brand-subtitle {
+      color: var(--muted-2);
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    nav a:hover {
+      color: var(--text);
+    }
+
+    .hero {
+      padding: 92px 0 72px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      margin-bottom: 18px;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 980px;
+      margin-bottom: 22px;
+      font-size: clamp(3rem, 7vw, 6.2rem);
+      line-height: 0.96;
+      letter-spacing: -0.06em;
+    }
+
+    .subtitle {
+      max-width: 880px;
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: clamp(1.08rem, 1.8vw, 1.38rem);
+      line-height: 1.55;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 30px;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 13px;
+      color: var(--muted);
+      background: #ffffff;
+      font-size: 0.88rem;
+    }
+
+    section {
+      padding: 72px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 28px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    .section-number {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.95rem;
+    }
+
+    .section-title h2 {
+      margin-bottom: 10px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1;
+      letter-spacing: -0.045em;
+    }
+
+    .section-title p {
+      max-width: 860px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .content {
+      margin-left: 100px;
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 1.02rem;
+    }
+
+    .content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 36px;
+      margin-left: 100px;
+    }
+
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      background: var(--panel);
+    }
+
+    .feature-card h3 {
+      margin-bottom: 10px;
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .contribution-list {
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+
+    .contribution-list li {
+      margin-bottom: 13px;
+      color: var(--muted);
+    }
+
+    .contribution-list strong {
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    .regime {
+      margin-top: 54px;
+    }
+
+    .regime:first-of-type {
+      margin-top: 0;
+    }
+
+    .regime-header {
+      margin-left: 100px;
+      margin-bottom: 28px;
+    }
+
+    .regime-kicker {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .regime h3 {
+      margin: 8px 0 8px;
+      font-size: clamp(1.7rem, 3vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+    }
+
+    .regime p {
+      max-width: 840px;
+      color: var(--muted);
+    }
+
+    .example {
+      margin-left: 100px;
+      margin-bottom: 34px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .example-header {
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-2);
+    }
+
+    .prompt {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+
+    .prompt::before {
+      content: "Prompt";
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .example-body {
+      padding: 24px;
+    }
+
+    .media-label {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .media-grid.two {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .media-grid.four {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .media-grid.samples {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .tile-caption {
+      margin-top: 8px;
+      color: var(--muted-2);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    footer {
+      padding: 36px 0;
+      color: var(--muted-2);
+      font-size: 0.9rem;
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    footer a {
+      color: var(--muted);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      nav {
+        display: none;
+      }
+
+      .section-heading {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .content,
+      .feature-grid,
+      .regime-header,
+      .example {
+        margin-left: 0;
+      }
+
+      .feature-grid,
+      .media-grid.two,
+      .media-grid.four,
+      .media-grid.samples {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="container topbar">
+      <a class="brand" href="#top" aria-label="Back to top">
+        <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 54" role="img" aria-label="Adobe Firefly">
+          <rect width="56" height="54" rx="9.91" ry="9.91" fill="#eb1000"/>
+          <path fill="#fff" d="M21.57,37.57c0,.22-.1.32-.32.32h-4.57c-.18,0-.25-.13-.25-.32V13.94c0-.21.07-.29.28-.29h14.65c.25,0,.31.07.35.31l.41,3.99c.04.22-.07.32-.31.32h-10.24v5.62h9.23c.21,0,.31.07.31.29v4.04c0,.22-.11.29-.29.29h-9.25v9.06Z"/>
+          <path fill="#fff" d="M34.86,19.81c0-.21.1-.31.31-.31h4.55c.24,0,.31.06.31.3v17.74c0,.24-.07.34-.34.34h-4.46c-.25,0-.37-.11-.37-.35v-17.73Z"/>
+          <path fill="#fff" d="M38.56,15.5l2.26.51c.89.2,1.51-.86.89-1.53l-1.57-1.7c-.21-.22-.29-.53-.22-.83l.51-2.26c.2-.89-.87-1.5-1.54-.88l-1.7,1.57c-.22.21-.54.29-.83.22l-2.26-.51c-.89-.2-1.51.86-.89,1.53l1.57,1.7c.21.22.29.53.22.83l-.51,2.26c-.2.89.87,1.5,1.54.88l1.7-1.57c.22-.21.54-.29.83-.22Z"/>
+        </svg>
+        <span class="brand-text">
+          <strong>Adobe Firefly</strong>
+          <span class="brand-subtitle">Internship Project · Summer 2024</span>
+        </span>
+      </a>
+      <nav aria-label="Page navigation">
+        <a href="#abstract">Abstract</a>
+        <a href="#method">Method</a>
+        <a href="#contributions">Contributions</a>
+        <a href="#results">Results</a>
+        <a href="#acknowledgments">Acknowledgments</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container">
+        <div class="eyebrow">Adobe Firefly · Text-to-Video Control</div>
+        <h1>Structure-Match Conditioning for Adobe Firefly Video</h1>
+        <p class="subtitle">
+          A modular adapter network that augments DiT-based text-to-video models with edge and depth structural conditioning &mdash; with adjustable strength, flexible modality control, and support for dense, sparse, and single-frame temporal guidance under one checkpoint.
+        </p>
+        <div class="meta" aria-label="Project metadata">
+          <span class="pill">By Dhruv Agarwal</span>
+          <span class="pill">Adobe Firefly · Summer 2024</span>
+          <span class="pill">Mentors: Gunjan Aggarwal, Lakshya, Kshitij Garg</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="abstract">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-number">01</div>
+          <div class="section-title">
+            <h2>Abstract</h2>
+          </div>
+        </div>
+        <div class="content">
+          <p>
+            Diffusion-based text-to-video models give creators a powerful interface for generating videos from text prompts, but they provide limited control over the geometry, layout, and motion of the generated clip. A creator may want the output to follow the structure of a mockup, a hand-drawn sketch, a reference video, or a 3D depth pass, while still using text to control the visual appearance. Standard text-only generation does not provide a direct way to express this structural intent.
+          </p>
+          <p>
+            This project introduces a modular adapter-based conditioning network that augments a DiT-based text-to-video backbone with structural guidance. In this proof of concept, the structure is represented using per-frame edge and depth maps extracted from a reference clip. The adapter supports any subset of conditioning modalities at inference time, including no conditioning, which recovers the original text-to-video setting. It also handles dense, sparse, and single-frame temporal conditioning using a single trained checkpoint.
+          </p>
+          <p>
+            A useful property of the design is that each conditioning modality can be controlled continuously at sample time. Edge and depth can therefore act as anything from a weak structural hint to a strong reference constraint. We validate the approach over Adobe's internal production text-to-video model using 20-frame clips at a fixed spatial resolution.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="method">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-number">02</div>
+          <div class="section-title">
+            <h2>Method</h2>
+            <p>
+              The core idea is to add a lightweight structural-control pathway around the base video model, instead of redesigning the text-to-video backbone itself.
+            </p>
+          </div>
+        </div>
+
+        <div class="content">
+          <p>
+            We design the conditioning network as a modular adapter that augments a DiT-based text-to-video backbone. Per-frame edge and depth maps are extracted from a reference clip, encoded into auxiliary streams, and injected into the denoising process through the adapter. The base model remains the text-to-video generator, while the adapter provides an additional pathway for structural control.
+          </p>
+          <p>
+            Two inputs determine how the conditioning is applied. The first is a per-modality strength scalar, one for edge and one for depth, which controls how strongly each structural stream influences generation. The second is a temporal mask that specifies which video frames contain conditioning signal. During training, both are sampled stochastically: strength values are sampled from a continuous range, and temporal masks are sampled across dense, sparse, and single-frame regimes.
+          </p>
+          <p>
+            This training strategy makes the checkpoint flexible at inference time. The same model can be used with edge only, depth only, both modalities, or no structure at all. It can also be used with conditioning on every frame, a few anchor frames, or a single anchor frame, without training separate models for each setting.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Adapter network</h3>
+            <p>
+              A modular conditioning pathway encodes edge and depth maps and injects the resulting structural signal into a DiT-based text-to-video backbone without requiring architectural changes to the base model.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Strength control</h3>
+            <p>
+              Per-modality strength values are sampled during training and exposed at inference, allowing edge and depth influence to be adjusted independently.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Temporal regimes</h3>
+            <p>
+              Stochastic temporal masking allows one checkpoint to support dense, sparse, and single-frame conditioning rather than relying on regime-specific models.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="contributions">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-number">03</div>
+          <div class="section-title">
+            <h2>Contributions</h2>
+            <p>
+              The project adds a structural-control pathway to text-to-video generation while preserving the flexibility of prompt-driven synthesis.
+            </p>
+          </div>
+        </div>
+
+        <div class="content">
+          <ul class="contribution-list">
+            <li>
+              <strong>Modular structural conditioning:</strong> an adapter-based network that augments a DiT-based text-to-video model with edge and depth cues, without modifying the base model architecture.
+            </li>
+            <li>
+              <strong>Continuous per-modality control:</strong> edge and depth guidance can be dialed independently at inference time, ranging from a subtle hint to strong reference adherence.
+            </li>
+            <li>
+              <strong>Flexible modality usage:</strong> the same checkpoint supports pure text-to-video generation, edge-only conditioning, depth-only conditioning, and joint edge-depth conditioning.
+            </li>
+            <li>
+              <strong>Unified temporal conditioning:</strong> a stochastic temporal-masking scheme enables dense, sparse, and single-frame conditioning under one training setup.
+            </li>
+            <li>
+              <strong>Production-model proof of concept:</strong> the method was instantiated over Adobe's internal production text-to-video backbone and fine-tuned for 20-frame video generation at a fixed spatial resolution.
+            </li>
+          </ul>
+          <p>
+            The results below show qualitative samples organized by temporal regime. Each example presents the structural inputs followed by independent samples generated from the same prompt and conditioning signal.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="results">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-number">04</div>
+          <div class="section-title">
+            <h2>Results</h2>
+            <p>
+              Qualitative samples are grouped by the amount of temporal structure available to the model: all frames, sparse anchor frames, or a single anchor frame.
+            </p>
+          </div>
+        </div>
+
+        <div class="regime">
+          <div class="regime-header">
+            <div class="regime-kicker">Dense conditioning · every frame conditioned</div>
+            <h3>Dense conditioning</h3>
+            <p>
+              Edge and depth signals are provided for all 20 frames. The generated motion follows the reference structure closely, while the text prompt controls appearance and scene semantics.
+            </p>
+          </div>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">beautiful scene, with icy-mountains afar. There is a frozen lake in the scene with penguins walking on it</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Structure inputs</span><span>every frame</span></div>
+              <div class="media-grid two">
+                <div><video src="assets/dense/row_5_col_0.mp4" autoplay loop muted playsinline></video><div class="tile-caption">Edge</div></div>
+                <div><video src="assets/dense/row_5_col_1.mp4" autoplay loop muted playsinline></video><div class="tile-caption">Depth</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/dense/row_5_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/dense/row_5_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">A beautiful scene of sand dunes in a desert</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Structure inputs</span><span>every frame</span></div>
+              <div class="media-grid two">
+                <div><video src="assets/dense/row_6_col_0.mp4" autoplay loop muted playsinline></video><div class="tile-caption">Edge</div></div>
+                <div><video src="assets/dense/row_6_col_1.mp4" autoplay loop muted playsinline></video><div class="tile-caption">Depth</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/dense/row_6_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/dense/row_6_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">a cow grazing and moving in the field. Mountains in the background</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Structure inputs</span><span>every frame</span></div>
+              <div class="media-grid two">
+                <div><video src="assets/dense/row_11_col_0.mp4" autoplay loop muted playsinline></video><div class="tile-caption">Edge</div></div>
+                <div><video src="assets/dense/row_11_col_1.mp4" autoplay loop muted playsinline></video><div class="tile-caption">Depth</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/dense/row_11_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/dense/row_11_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="regime">
+          <div class="regime-header">
+            <div class="regime-kicker">Sparse conditioning · 4 of 20 frames conditioned</div>
+            <h3>Sparse conditioning</h3>
+            <p>
+              Conditioning is provided at four anchor frames, here t = 0, 5, 10, and 15. The remaining frames are generated by the model under the joint constraint of the text prompt and the sparse structural anchors.
+            </p>
+          </div>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">A red car on the road on a bright sunny day</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Edge anchors</span><span>t = 0, 5, 10, 15</span></div>
+              <div class="media-grid four">
+                <div><img src="assets/sparse/row_3_col_0_anchors/00.jpg" alt="Edge anchor t=0"><div class="tile-caption">t = 0</div></div>
+                <div><img src="assets/sparse/row_3_col_0_anchors/05.jpg" alt="Edge anchor t=5"><div class="tile-caption">t = 5</div></div>
+                <div><img src="assets/sparse/row_3_col_0_anchors/10.jpg" alt="Edge anchor t=10"><div class="tile-caption">t = 10</div></div>
+                <div><img src="assets/sparse/row_3_col_0_anchors/15.jpg" alt="Edge anchor t=15"><div class="tile-caption">t = 15</div></div>
+              </div>
+              <div class="media-label"><span>Depth anchors</span><span>t = 0, 5, 10, 15</span></div>
+              <div class="media-grid four">
+                <div><img src="assets/sparse/row_3_col_1_anchors/00.jpg" alt="Depth anchor t=0"><div class="tile-caption">t = 0</div></div>
+                <div><img src="assets/sparse/row_3_col_1_anchors/05.jpg" alt="Depth anchor t=5"><div class="tile-caption">t = 5</div></div>
+                <div><img src="assets/sparse/row_3_col_1_anchors/10.jpg" alt="Depth anchor t=10"><div class="tile-caption">t = 10</div></div>
+                <div><img src="assets/sparse/row_3_col_1_anchors/15.jpg" alt="Depth anchor t=15"><div class="tile-caption">t = 15</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/sparse/row_3_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/sparse/row_3_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">A pole with a poster of a lost cat on it. Trees in background with leaves moving erratically due to wind</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Edge anchors</span><span>t = 0, 5, 10, 15</span></div>
+              <div class="media-grid four">
+                <div><img src="assets/sparse/row_15_col_0_anchors/00.jpg" alt="Edge anchor t=0"><div class="tile-caption">t = 0</div></div>
+                <div><img src="assets/sparse/row_15_col_0_anchors/05.jpg" alt="Edge anchor t=5"><div class="tile-caption">t = 5</div></div>
+                <div><img src="assets/sparse/row_15_col_0_anchors/10.jpg" alt="Edge anchor t=10"><div class="tile-caption">t = 10</div></div>
+                <div><img src="assets/sparse/row_15_col_0_anchors/15.jpg" alt="Edge anchor t=15"><div class="tile-caption">t = 15</div></div>
+              </div>
+              <div class="media-label"><span>Depth anchors</span><span>t = 0, 5, 10, 15</span></div>
+              <div class="media-grid four">
+                <div><img src="assets/sparse/row_15_col_1_anchors/00.jpg" alt="Depth anchor t=0"><div class="tile-caption">t = 0</div></div>
+                <div><img src="assets/sparse/row_15_col_1_anchors/05.jpg" alt="Depth anchor t=5"><div class="tile-caption">t = 5</div></div>
+                <div><img src="assets/sparse/row_15_col_1_anchors/10.jpg" alt="Depth anchor t=10"><div class="tile-caption">t = 10</div></div>
+                <div><img src="assets/sparse/row_15_col_1_anchors/15.jpg" alt="Depth anchor t=15"><div class="tile-caption">t = 15</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/sparse/row_15_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/sparse/row_15_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">a person on a skateboard, upper body shot</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Edge anchors</span><span>t = 0, 5, 10, 15</span></div>
+              <div class="media-grid four">
+                <div><img src="assets/sparse/row_7_col_0_anchors/00.jpg" alt="Edge anchor t=0"><div class="tile-caption">t = 0</div></div>
+                <div><img src="assets/sparse/row_7_col_0_anchors/05.jpg" alt="Edge anchor t=5"><div class="tile-caption">t = 5</div></div>
+                <div><img src="assets/sparse/row_7_col_0_anchors/10.jpg" alt="Edge anchor t=10"><div class="tile-caption">t = 10</div></div>
+                <div><img src="assets/sparse/row_7_col_0_anchors/15.jpg" alt="Edge anchor t=15"><div class="tile-caption">t = 15</div></div>
+              </div>
+              <div class="media-label"><span>Depth anchors</span><span>t = 0, 5, 10, 15</span></div>
+              <div class="media-grid four">
+                <div><img src="assets/sparse/row_7_col_1_anchors/00.jpg" alt="Depth anchor t=0"><div class="tile-caption">t = 0</div></div>
+                <div><img src="assets/sparse/row_7_col_1_anchors/05.jpg" alt="Depth anchor t=5"><div class="tile-caption">t = 5</div></div>
+                <div><img src="assets/sparse/row_7_col_1_anchors/10.jpg" alt="Depth anchor t=10"><div class="tile-caption">t = 10</div></div>
+                <div><img src="assets/sparse/row_7_col_1_anchors/15.jpg" alt="Depth anchor t=15"><div class="tile-caption">t = 15</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/sparse/row_7_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/sparse/row_7_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="regime">
+          <div class="regime-header">
+            <div class="regime-kicker">Single-frame conditioning · 1 of 20 frames conditioned</div>
+            <h3>Single-frame conditioning</h3>
+            <p>
+              Conditioning is provided only at t = 0. The rest of the video is generated from the text prompt and the structure of a single anchor frame.
+            </p>
+          </div>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">A statue of a woman in a museum</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Structure inputs</span><span>anchor frame at t = 0</span></div>
+              <div class="media-grid two">
+                <div><img src="assets/single/row_2_col_0_anchors/00.jpg" alt="Edge anchor for statue example"><div class="tile-caption">Edge anchor</div></div>
+                <div><img src="assets/single/row_2_col_1_anchors/00.jpg" alt="Depth anchor for statue example"><div class="tile-caption">Depth anchor</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/single/row_2_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/single/row_2_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">a rabbit behind fence is sitting and chewing</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Structure inputs</span><span>anchor frame at t = 0</span></div>
+              <div class="media-grid two">
+                <div><img src="assets/single/row_13_col_0_anchors/00.jpg" alt="Edge anchor for rabbit example"><div class="tile-caption">Edge anchor</div></div>
+                <div><img src="assets/single/row_13_col_1_anchors/00.jpg" alt="Depth anchor for rabbit example"><div class="tile-caption">Depth anchor</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/single/row_13_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/single/row_13_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="example">
+            <div class="example-header">
+              <p class="prompt">A man slicing tomatoes with a knife</p>
+            </div>
+            <div class="example-body">
+              <div class="media-label"><span>Structure inputs</span><span>anchor frame at t = 0</span></div>
+              <div class="media-grid two">
+                <div><img src="assets/single/row_25_col_0_anchors/00.jpg" alt="Edge anchor for tomatoes example"><div class="tile-caption">Edge anchor</div></div>
+                <div><img src="assets/single/row_25_col_1_anchors/00.jpg" alt="Depth anchor for tomatoes example"><div class="tile-caption">Depth anchor</div></div>
+              </div>
+              <div class="media-label"><span>Generated samples</span><span>independent seeds</span></div>
+              <div class="media-grid samples">
+                <div><video src="assets/single/row_25_col_2.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 1</div></div>
+                <div><video src="assets/single/row_25_col_5.mp4" autoplay loop muted playsinline></video><div class="tile-caption">seed 4</div></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="acknowledgments">
+      <div class="container">
+        <div class="section-heading">
+          <div class="section-number">05</div>
+          <div class="section-title">
+            <h2>Acknowledgments</h2>
+          </div>
+        </div>
+        <div class="content">
+          <p>
+            I thank Gunjan Aggarwal and Lakshya for their technical guidance throughout this project, and Kshitij Garg for hosting the work on his team. I am also grateful to the broader Adobe Firefly Video team for the model, infrastructure, and engineering support on which this work was built.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>Internship project · Adobe Firefly · Summer 2024</span>
+      <a href="#top">Back to top &uarr;</a>
+    </div>
+  </footer>
+</body>
+</html>
+
